@@ -14,25 +14,25 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ******************************************************************************* */
-import { ResponseSign, IronfishIns, IronfishKeys, KeyResponse } from "./types";
-
 import GenericApp, {
   ConstructorParams,
-  errorCodeToString,
   LedgerError,
   PAYLOAD_TYPE,
-  processErrorResponse,
   Transport,
-} from "@zondax/ledger-js";
-import { processGetKeysResponse } from "./helper";
-import { REDJUBJUB_SIGNATURE_LEN, P2_VALUES } from "./consts";
+  errorCodeToString,
+  processErrorResponse,
+} from '@zondax/ledger-js'
 
-export * from "./types";
+import { P2_VALUES, REDJUBJUB_SIGNATURE_LEN } from './consts'
+import { processGetKeysResponse } from './helper'
+import { IronfishIns, IronfishKeys, KeyResponse, ResponseSign } from './types'
+
+export * from './types'
 
 export default class IronfishApp extends GenericApp {
-  readonly INS!: IronfishIns;
+  readonly INS!: IronfishIns
   constructor(transport: Transport) {
-    if (transport == null) throw new Error("Transport has not been defined");
+    if (transport == null) throw new Error('Transport has not been defined')
 
     const params: ConstructorParams = {
       cla: 0x59,
@@ -47,29 +47,27 @@ export default class IronfishApp extends GenericApp {
       },
       acceptedPathLengths: [3],
       chunkSize: 250,
-    };
-    super(transport, params);
+    }
+    super(transport, params)
   }
 
   async retrieveKeys(path: string, keyType: IronfishKeys, showInDevice: boolean): Promise<KeyResponse> {
-    const serializedPath = this.serializePath(path);
-    const p1 = showInDevice ? this.P1_VALUES.SHOW_ADDRESS_IN_DEVICE : this.P1_VALUES.ONLY_RETRIEVE;
+    const serializedPath = this.serializePath(path)
+    const p1 = showInDevice ? this.P1_VALUES.SHOW_ADDRESS_IN_DEVICE : this.P1_VALUES.ONLY_RETRIEVE
 
     return await this.transport
-      .send(this.CLA, this.INS.GET_KEYS, p1, keyType, serializedPath, [
-        LedgerError.NoErrors,
-      ])
-      .then((response) => processGetKeysResponse(response, keyType), processErrorResponse);
+      .send(this.CLA, this.INS.GET_KEYS, p1, keyType, serializedPath, [LedgerError.NoErrors])
+      .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
   }
 
   // #{TODO} --> Create sign methods, this are example ones!
   async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer): Promise<ResponseSign> {
-    let payloadType = PAYLOAD_TYPE.ADD;
+    let payloadType = PAYLOAD_TYPE.ADD
     if (chunkIdx === 1) {
-      payloadType = PAYLOAD_TYPE.INIT;
+      payloadType = PAYLOAD_TYPE.INIT
     }
     if (chunkIdx === chunkNum) {
-      payloadType = PAYLOAD_TYPE.LAST;
+      payloadType = PAYLOAD_TYPE.LAST
     }
 
     return await this.transport
@@ -80,18 +78,18 @@ export default class IronfishApp extends GenericApp {
         LedgerError.SignVerifyError,
       ])
       .then((response: Buffer) => {
-        const errorCodeData = response.subarray(-2);
-        const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
-        let errorMessage = errorCodeToString(returnCode);
+        const errorCodeData = response.subarray(-2)
+        const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+        let errorMessage = errorCodeToString(returnCode)
 
-        let signatures: Buffer[] = [];
+        let signatures: Buffer[] = []
 
         if (
           returnCode === LedgerError.BadKeyHandle ||
           returnCode === LedgerError.DataIsInvalid ||
           returnCode === LedgerError.SignVerifyError
         ) {
-          errorMessage = `${errorMessage} : ${response.subarray(0, response.length - 2).toString("ascii")}`;
+          errorMessage = `${errorMessage} : ${response.subarray(0, response.length - 2).toString('ascii')}`
         }
 
         if (returnCode === LedgerError.NoErrors && response.length > 2) {
@@ -105,32 +103,32 @@ export default class IronfishApp extends GenericApp {
             signatures,
             returnCode,
             errorMessage,
-          };
+          }
         }
 
         return {
           returnCode,
           errorMessage,
-        };
-      }, processErrorResponse);
+        }
+      }, processErrorResponse)
   }
 
   async sign(path: string, blob: Buffer): Promise<ResponseSign> {
-    const chunks = this.prepareChunks(path, blob);
-    return await this.signSendChunk(1, chunks.length, chunks[0]).then(async (response) => {
+    const chunks = this.prepareChunks(path, blob)
+    return await this.signSendChunk(1, chunks.length, chunks[0]).then(async response => {
       let result: ResponseSign = {
         returnCode: response.returnCode,
         errorMessage: response.errorMessage,
-      };
+      }
 
       for (let i = 1; i < chunks.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
-        result = await this.signSendChunk(1 + i, chunks.length, chunks[i]);
+        result = await this.signSendChunk(1 + i, chunks.length, chunks[i])
         if (result.returnCode !== LedgerError.NoErrors) {
-          break;
+          break
         }
       }
-      return result;
-    }, processErrorResponse);
+      return result
+    }, processErrorResponse)
   }
 }

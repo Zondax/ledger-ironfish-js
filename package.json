@@ -20,12 +20,9 @@
   ],
   "scripts": {
     "build": "tsc",
-    "format": "FORCE_COLOR=1 prettier --write . && sort-package-json",
-    "format:check": "FORCE_COLOR=1 prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "test": "yarn build && jest",
-    "upgrade": "bunx npm-check-updates -i"
+    "format": "prettier --write ."
   },
   "bugs": {
     "url": "https://github.com/zondax/ledger-ironfish-js/issues"
@@ -34,6 +31,7 @@
     "@zondax/ledger-js": "^0.2.1"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/node": "^20.14.5",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
@@ -43,6 +41,8 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-n": "^17.9.0",
     "eslint-plugin-promise": "^6.2.0",
+    "eslint-plugin-tsdoc": "^0.3.0",
+    "eslint-plugin-unused-imports": "^4.0.0",
     "prettier": "^3.3.2",
     "sort-package-json": "^2.10.0",
     "typescript": "^5.4.5"
