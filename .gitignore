@@ -69,6 +69,8 @@ typings/
 TODO\.md
 
 \dist
+node_modules
+
 /certs/cert.pem
 /certs/server.cert
 /certs/server.key
