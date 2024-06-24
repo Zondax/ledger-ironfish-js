@@ -7,6 +7,18 @@ This package provides a basic client library to communicate with the Ironfish Ap
 
 We recommend using the npmjs package in order to receive updates/fixes.
 
-## Notes
-
 Use `yarn install` to avoid issues.
+
+# Available commands
+
+| Operation    | Response                                 | Command                       |
+|--------------|------------------------------------------|-------------------------------|
+| getVersion   | app version                              | ---------------               |
+| appInfo      | name, version, flags, etc                | ---------------               |
+| deviceInfo   | fw and mcu version, id, etc              | Only available in dashboard   |
+| sign         | signed message                           | path + message                |
+| retrieveKeys | address or view key or proof gen key     | path + key type + verify flag |
+
+# Who we are?
+
+We are Zondax, a company pioneering blockchain services. If you want to know more about us, please visit us at [zondax.ch](https://zondax.ch)
