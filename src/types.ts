@@ -24,7 +24,7 @@ export interface ResponseProofGenKey extends ResponseBase {
 }
 
 export interface ResponseSign extends ResponseBase {
-  signatures?: Buffer[]
+  signature?: Buffer
 }
 
 export enum IronfishKeys {

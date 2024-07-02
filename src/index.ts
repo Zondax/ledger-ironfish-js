@@ -82,8 +82,6 @@ export default class IronfishApp extends GenericApp {
         const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         let errorMessage = errorCodeToString(returnCode)
 
-        let signatures: Buffer[] = []
-
         if (
           returnCode === LedgerError.BadKeyHandle ||
           returnCode === LedgerError.DataIsInvalid ||
@@ -92,15 +90,11 @@ export default class IronfishApp extends GenericApp {
           errorMessage = `${errorMessage} : ${response.subarray(0, response.length - 2).toString('ascii')}`
         }
 
-        if (returnCode === LedgerError.NoErrors && response.length > 2) {
-          const signaturesLen = (response.length - 2) / REDJUBJUB_SIGNATURE_LEN
-          for (let i = 0; i < signaturesLen; i++) {
-            const tmpSignature = response.subarray(i * REDJUBJUB_SIGNATURE_LEN, i * REDJUBJUB_SIGNATURE_LEN + REDJUBJUB_SIGNATURE_LEN)
-            signatures.push(tmpSignature)
-          }
+        if (returnCode === LedgerError.NoErrors && response.length == (2 + REDJUBJUB_SIGNATURE_LEN)) {
+          const signature = response.subarray(0, REDJUBJUB_SIGNATURE_LEN)
 
           return {
-            signatures,
+            signature,
             returnCode,
             errorMessage,
           }
