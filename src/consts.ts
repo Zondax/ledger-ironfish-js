@@ -12,3 +12,4 @@ export const KEY_TYPES = {
 
 export const KEY_LENGTH = 32
 export const REDJUBJUB_SIGNATURE_LEN = 64
+export const ED25519_SIGNATURE_LEN = 64

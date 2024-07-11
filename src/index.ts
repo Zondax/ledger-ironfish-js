@@ -24,8 +24,8 @@ import GenericApp, {
 } from '@zondax/ledger-js'
 
 import { P2_VALUES, REDJUBJUB_SIGNATURE_LEN } from './consts'
-import { processGetKeysResponse } from './helper'
-import { IronfishIns, IronfishKeys, KeyResponse, ResponseSign } from './types'
+import { processGetIdentityResponse, processGetKeysResponse } from './helper'
+import { IronfishIns, IronfishKeys, KeyResponse, ResponseIdentity, ResponseSign } from './types'
 
 export * from './types'
 
@@ -40,6 +40,8 @@ export default class IronfishApp extends GenericApp {
         GET_VERSION: 0x00,
         GET_KEYS: 0x01,
         SIGN: 0x02,
+        //DKG Instructions
+        GET_IDENTITY: 0x10,
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -60,7 +62,6 @@ export default class IronfishApp extends GenericApp {
       .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
   }
 
-  // #{TODO} --> Create sign methods, this are example ones!
   async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer): Promise<ResponseSign> {
     let payloadType = PAYLOAD_TYPE.ADD
     if (chunkIdx === 1) {
@@ -124,5 +125,11 @@ export default class IronfishApp extends GenericApp {
       }
       return result
     }, processErrorResponse)
+  }
+
+  async dkgGetIdentity(): Promise<ResponseIdentity> {
+    return await this.transport
+      .send(this.CLA, this.INS.GET_IDENTITY, 0, 0, undefined, [LedgerError.NoErrors])
+      .then(response => processGetIdentityResponse(response), processErrorResponse)
   }
 }

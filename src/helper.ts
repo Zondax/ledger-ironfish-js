@@ -1,7 +1,7 @@
 import { errorCodeToString } from '@zondax/ledger-js'
 
-import { KEY_LENGTH } from './consts'
-import { IronfishKeys, KeyResponse } from './types'
+import { ED25519_SIGNATURE_LEN, KEY_LENGTH, REDJUBJUB_SIGNATURE_LEN } from './consts'
+import { IronfishKeys, KeyResponse, ResponseIdentity } from './types'
 
 export function processGetKeysResponse(response: Buffer, keyType: IronfishKeys): KeyResponse {
   const errorCodeData = response.subarray(-2)
@@ -58,4 +58,33 @@ export function processGetKeysResponse(response: Buffer, keyType: IronfishKeys):
   }
 
   return requestedKey
+}
+
+export function processGetIdentityResponse(response: Buffer): ResponseIdentity {
+  const errorCodeData = response.subarray(-2)
+  const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+
+  let identity: ResponseIdentity = {
+    returnCode: returnCode,
+    errorMessage: errorCodeToString(returnCode),
+  }
+
+  console.log(`Response lenght: ${response.length}`)
+
+  const verificationKey = Buffer.from(response.subarray(0, KEY_LENGTH))
+  response = response.subarray(KEY_LENGTH)
+
+  const encryptionKey = Buffer.from(response.subarray(0, KEY_LENGTH))
+  response = response.subarray(KEY_LENGTH)
+
+  const signature = Buffer.from(response.subarray(0, ED25519_SIGNATURE_LEN))
+
+  identity = {
+    ...identity,
+    verificationKey,
+    encryptionKey,
+    signature
+  }
+
+  return identity
 }
