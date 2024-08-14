@@ -35,7 +35,5 @@ export enum IronfishKeys {
 }
 
 export interface ResponseIdentity extends ResponseBase {
-  verificationKey?: Buffer
-  encryptionKey?: Buffer
-  signature?: Buffer
+  identity?: Buffer
 }
