@@ -28,7 +28,7 @@ import { processGetIdentityResponse, processGetKeysResponse } from './helper'
 import {
   IronfishIns,
   IronfishKeys,
-  KeyResponse,
+  KeyResponse, ResponseDkgGetCommitment,
   ResponseDkgRound1,
   ResponseDkgRound2, ResponseDkgRound3,
   ResponseIdentity,
@@ -486,7 +486,7 @@ export default class IronfishApp extends GenericApp {
   }
 
 
-  async dkgGetCommitment(path: string, identities: string[], tx_hash: string): Promise<ResponseDkgRound3> {
+  async dkgGetCommitment(path: string, identities: string[], tx_hash: string): Promise<ResponseDkgGetCommitment> {
     let blob = Buffer
         .alloc(1 + identities.length * 129 + 32);
     console.log(`dkgGetCommitment msg size: ${blob.byteLength}`)
@@ -556,9 +556,11 @@ export default class IronfishApp extends GenericApp {
           }
 
         } else {
+
           return {
             returnCode,
-            errorMessage
+            errorMessage,
+            commitment: data
           }
         }
       }
