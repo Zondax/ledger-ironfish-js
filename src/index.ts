@@ -16,21 +16,24 @@
  ******************************************************************************* */
 import GenericApp, {
   ConstructorParams,
+  errorCodeToString,
   LedgerError,
   PAYLOAD_TYPE,
-  Transport,
-  errorCodeToString,
   processErrorResponse,
+  Transport,
 } from '@zondax/ledger-js'
 
-import { P2_VALUES, REDJUBJUB_SIGNATURE_LEN } from './consts'
-import { processGetIdentityResponse, processGetKeysResponse } from './helper'
+import {P2_VALUES, REDJUBJUB_SIGNATURE_LEN} from './consts'
+import {processGetIdentityResponse, processGetKeysResponse} from './helper'
 import {
   IronfishIns,
   IronfishKeys,
-  KeyResponse, ResponseDkgGetCommitment,
+  KeyResponse,
+  ResponseDkgGetCommitment,
   ResponseDkgRound1,
-  ResponseDkgRound2, ResponseDkgRound3, ResponseDkgSign,
+  ResponseDkgRound2,
+  ResponseDkgRound3,
+  ResponseDkgSign,
   ResponseIdentity,
   ResponseSign
 } from './types'
@@ -54,7 +57,8 @@ export default class IronfishApp extends GenericApp {
         DKG_ROUND_2: 0x12,
         DKG_ROUND_3: 0x13,
         DKG_GET_COMMITMENT: 0x14,
-        DKG_SIGN: 0x15
+        DKG_SIGN: 0x15,
+        DKG_GET_KEYS: 0x16
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -664,5 +668,15 @@ export default class IronfishApp extends GenericApp {
     } catch(e){
       return processErrorResponse(e)
     }
+  }
+
+  async dkgRetrieveKeys(keyType: IronfishKeys): Promise<KeyResponse> {
+    if(keyType != IronfishKeys.PublicAddress){
+      throw new Error("not implemented yet")
+    }
+
+    return await this.transport
+        .send(this.CLA, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
+        .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
   }
 }
