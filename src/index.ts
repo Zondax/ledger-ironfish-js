@@ -37,6 +37,7 @@ import {
   ResponseIdentity,
   ResponseSign
 } from './types'
+import {encodeRound3Inputs, minimizeRound3Inputs} from "./ironfish";
 
 export * from './types'
 
@@ -382,44 +383,8 @@ export default class IronfishApp extends GenericApp {
 
 
   async dkgRound3(path: string, index: number, round1PublicPackages: string[], round2PublicPackages: string[], round2SecretPackage: string): Promise<ResponseDkgRound3> {
-    let round1PublicPackagesLen = round1PublicPackages[0].length / 2
-    let round2PublicPackagesLen = round2PublicPackages[0].length / 2
-    let round2SecretPackageLen = round2SecretPackage.length / 2
-
-    let blob = Buffer
-        .alloc(1 + 1 + 2 + round1PublicPackages.length * round1PublicPackagesLen + 1 + 2 + round2PublicPackages.length * round2PublicPackagesLen + 2 + round2SecretPackageLen);
-    console.log(`dkgRound3 msg size: ${blob.byteLength}`)
-
-    let pos = 0;
-
-    blob.writeUint8(index, pos);
-    pos += 1;
-
-    blob.writeUint8(round1PublicPackages.length, pos);
-    pos += 1;
-    blob.writeUint16BE(round1PublicPackagesLen, pos);
-    pos += 2;
-
-    for (let i = 0; i < round1PublicPackages.length; i++) {
-      blob.fill(Buffer.from(round1PublicPackages[i], "hex"), pos)
-      pos += round1PublicPackagesLen;
-    }
-
-    blob.writeUint8(round2PublicPackages.length, pos);
-    pos += 1;
-    blob.writeUint16BE(round2PublicPackagesLen, pos);
-    pos += 2;
-
-    for (let i = 0; i < round2PublicPackages.length; i++) {
-      blob.fill(Buffer.from(round2PublicPackages[i], "hex"), pos)
-      pos += round2PublicPackagesLen;
-    }
-
-    blob.writeUint16BE(round2SecretPackageLen, pos);
-    pos += 2;
-
-    blob.fill(Buffer.from(round2SecretPackage, "hex"), pos)
-    pos += round2SecretPackageLen;
+    const {participants, round2PublicPkgs, round1PublicPkgs, gskBytes } = minimizeRound3Inputs(index, round1PublicPackages, round2PublicPackages)
+    const blob = encodeRound3Inputs(index, participants, round1PublicPkgs, round2PublicPkgs, round2SecretPackage, gskBytes)
 
     const chunks = this.prepareChunks(path, blob)
 
