@@ -671,10 +671,6 @@ export default class IronfishApp extends GenericApp {
   }
 
   async dkgRetrieveKeys(keyType: IronfishKeys): Promise<KeyResponse> {
-    if(keyType != IronfishKeys.PublicAddress){
-      throw new Error("not implemented yet")
-    }
-
     return await this.transport
         .send(this.CLA, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
         .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
