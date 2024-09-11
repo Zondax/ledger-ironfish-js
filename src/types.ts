@@ -8,9 +8,10 @@ export interface IronfishIns extends INSGeneric {
   DKG_ROUND_1: 0x11
   DKG_ROUND_2: 0x12
   DKG_ROUND_3: 0x13
-  DKG_GET_COMMITMENT: 0x14
+  DKG_GET_COMMITMENTS: 0x14
   DKG_SIGN: 0x15
   DKG_GET_KEYS: 0x16
+  DKG_GET_NONCES: 0x17
 }
 
 export type KeyResponse = ResponseAddress | ResponseViewKey | ResponseProofGenKey
@@ -54,8 +55,11 @@ export interface ResponseDkgRound2 extends ResponseBase {
   secretPackage?: Buffer
 }
 export interface ResponseDkgRound3 extends ResponseBase {}
-export interface ResponseDkgGetCommitment extends ResponseBase {
-  commitment?: Buffer
+export interface ResponseDkgGetCommitments extends ResponseBase {
+  commitments?: Buffer
+}
+export interface ResponseDkgGetNonces extends ResponseBase {
+  nonces?: Buffer
 }
 export interface ResponseDkgSign extends ResponseBase {
   signature?: Buffer

@@ -29,7 +29,7 @@ import {
   IronfishIns,
   IronfishKeys,
   KeyResponse,
-  ResponseDkgGetCommitment,
+  ResponseDkgGetCommitments, ResponseDkgGetNonces,
   ResponseDkgRound1,
   ResponseDkgRound2,
   ResponseDkgRound3,
@@ -57,9 +57,10 @@ export default class IronfishApp extends GenericApp {
         DKG_ROUND_1: 0x11,
         DKG_ROUND_2: 0x12,
         DKG_ROUND_3: 0x13,
-        DKG_GET_COMMITMENT: 0x14,
+        DKG_GET_COMMITMENTS: 0x14,
         DKG_SIGN: 0x15,
-        DKG_GET_KEYS: 0x16
+        DKG_GET_KEYS: 0x16,
+        DKG_GET_NONCES: 0x17
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -456,7 +457,7 @@ export default class IronfishApp extends GenericApp {
   }
 
 
-  async dkgGetCommitment(path: string, identities: string[], tx_hash: string): Promise<ResponseDkgGetCommitment> {
+  async dkgGetCommitments(path: string, identities: string[], tx_hash: string): Promise<ResponseDkgGetCommitments> {
     let blob = Buffer
         .alloc(1 + identities.length * 129 + 32);
     console.log(`dkgGetCommitment msg size: ${blob.byteLength}`)
@@ -478,7 +479,7 @@ export default class IronfishApp extends GenericApp {
       let errorCodeData = Buffer.alloc(0);
       let errorMessage = "";
       try {
-        response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENT, 1, chunks.length, chunks[0])
+        response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENTS, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
 
         errorCodeData = response.subarray(-2)
@@ -490,7 +491,7 @@ export default class IronfishApp extends GenericApp {
 
       for (let i = 1; i < chunks.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
-        response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENT, 1 + i, chunks.length, chunks[i])
+        response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENTS, 1 + i, chunks.length, chunks[i])
         // console.log("resp " + i + " " + response.toString("hex"))
 
         errorCodeData = response.subarray(-2)
@@ -512,7 +513,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENT, 0, 0, Buffer.alloc(0))
+          response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENTS, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -531,7 +532,7 @@ export default class IronfishApp extends GenericApp {
           return {
             returnCode,
             errorMessage,
-            commitment: data
+            commitments: data
           }
         }
       }
@@ -540,6 +541,93 @@ export default class IronfishApp extends GenericApp {
       return processErrorResponse(e)
     }
   }
+
+
+  async dkgGetNonces(path: string, identities: string[], tx_hash: string): Promise<ResponseDkgGetNonces> {
+    let blob = Buffer
+        .alloc(1 + identities.length * 129 + 32);
+    console.log(`dkgGetNonces msg size: ${blob.byteLength}`)
+
+
+    blob.writeUint8(identities.length, 0);
+
+    for (let i = 0; i < identities.length; i++) {
+      blob.fill(Buffer.from(identities[i], "hex"), 1 + (i * 129));
+    }
+
+    blob.fill(Buffer.from(tx_hash, "hex"), 1 + identities.length * 129);
+
+    const chunks = this.prepareChunks(path, blob)
+
+    try{
+      let response = Buffer.alloc(0)
+      let returnCode = 0;
+      let errorCodeData = Buffer.alloc(0);
+      let errorMessage = "";
+      try {
+        response = await this.sendDkgChunk(this.INS.DKG_GET_NONCES, 1, chunks.length, chunks[0])
+        // console.log("resp 0 " + response.toString("hex"))
+
+        errorCodeData = response.subarray(-2)
+        returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+        errorMessage = errorCodeToString(returnCode)
+      }catch(e){
+        // console.log(e)
+      }
+
+      for (let i = 1; i < chunks.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        response = await this.sendDkgChunk(this.INS.DKG_GET_NONCES, 1 + i, chunks.length, chunks[i])
+        // console.log("resp " + i + " " + response.toString("hex"))
+
+        errorCodeData = response.subarray(-2)
+        returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+        errorMessage = errorCodeToString(returnCode)
+
+        // console.log("returnCode " + returnCode)
+        if (returnCode !== LedgerError.NoErrors){
+          return {
+            returnCode,
+            errorMessage
+          }
+        }
+      }
+
+      let data = Buffer.alloc(0)
+      while(true) {
+        let newData = response.subarray(0, response.length - 2)
+        data = Buffer.concat([data, newData])
+
+        if (response.length == 255) {
+          response = await this.sendDkgChunk(this.INS.DKG_GET_NONCES, 0, 0, Buffer.alloc(0))
+          // console.log("resp " + response.toString("hex"))
+
+          errorCodeData = response.subarray(-2)
+          returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+          errorMessage = errorCodeToString(returnCode)
+
+          if (returnCode !== LedgerError.NoErrors){
+            return {
+              returnCode,
+              errorMessage
+            }
+          }
+
+        } else {
+
+          return {
+            returnCode,
+            errorMessage,
+            nonces: data
+          }
+        }
+      }
+
+    } catch(e){
+      return processErrorResponse(e)
+    }
+  }
+
   async dkgSign(path: string, pkRandomness: string, frostSigningPackage: string, nonces: string): Promise<ResponseDkgSign> {
     let pkRandomnessLen = pkRandomness.length/2
     let frostSigningPackageLen = frostSigningPackage.length/2
