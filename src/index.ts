@@ -462,7 +462,8 @@ export default class IronfishApp extends GenericApp {
     console.log(`dkgGetCommitment msg size: ${blob.byteLength}`)
 
 
-    blob.writeUint8(identities.length, 1);
+    blob.writeUint8(identities.length, 0);
+
     for (let i = 0; i < identities.length; i++) {
       blob.fill(Buffer.from(identities[i], "hex"), 1 + (i * 129));
     }
