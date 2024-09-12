@@ -28,7 +28,7 @@ import {processGetIdentityResponse, processGetKeysResponse} from './helper'
 import {
   IronfishIns,
   IronfishKeys,
-  KeyResponse,
+  KeyResponse, ResponseDkgBackupKeys,
   ResponseDkgGetCommitments, ResponseDkgGetNonces, ResponseDkgGetPublicPackage,
   ResponseDkgRound1,
   ResponseDkgRound2,
@@ -61,7 +61,8 @@ export default class IronfishApp extends GenericApp {
         DKG_SIGN: 0x15,
         DKG_GET_KEYS: 0x16,
         DKG_GET_NONCES: 0x17,
-        DKG_GET_PUBLIC_PACKAGE: 0x18
+        DKG_GET_PUBLIC_PACKAGE: 0x18,
+        DKG_BACKUP_KEYS: 0x19
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -778,6 +779,58 @@ export default class IronfishApp extends GenericApp {
     }
   }
 
+
+
+  async dkgBackupKeys(): Promise<ResponseDkgBackupKeys> {
+    try{
+      let response = await this.transport.send(this.CLA, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
+      // console.log("resp 0 " + response.toString("hex"))
+      let errorCodeData = response.subarray(-2)
+      let returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+      let errorMessage = errorCodeToString(returnCode)
+
+      // console.log("returnCode " + returnCode)
+      if (returnCode !== LedgerError.NoErrors){
+        return {
+          returnCode,
+          errorMessage
+        }
+      }
+
+      let data = Buffer.alloc(0)
+      while(true) {
+        let newData = response.subarray(0, response.length - 2)
+        data = Buffer.concat([data, newData])
+
+        if (response.length == 255) {
+          response = await this.sendDkgChunk(this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0))
+          // console.log("resp " + response.toString("hex"))
+
+          errorCodeData = response.subarray(-2)
+          returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+          errorMessage = errorCodeToString(returnCode)
+
+          if (returnCode !== LedgerError.NoErrors){
+            return {
+              returnCode,
+              errorMessage
+            }
+          }
+
+        } else {
+
+          return {
+            returnCode,
+            errorMessage,
+            encryptedKeys: data
+          }
+        }
+      }
+
+    } catch(e){
+      return processErrorResponse(e)
+    }
+  }
   async dkgRetrieveKeys(keyType: IronfishKeys): Promise<KeyResponse> {
     return await this.transport
         .send(this.CLA, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])

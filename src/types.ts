@@ -13,6 +13,7 @@ export interface IronfishIns extends INSGeneric {
   DKG_GET_KEYS: 0x16
   DKG_GET_NONCES: 0x17
   DKG_GET_PUBLIC_PACKAGE: 0x18
+  DKG_BACKUP_KEYS: 0x19
 }
 
 export type KeyResponse = ResponseAddress | ResponseViewKey | ResponseProofGenKey
@@ -67,4 +68,7 @@ export interface ResponseDkgSign extends ResponseBase {
 }
 export interface ResponseDkgGetPublicPackage extends ResponseBase {
   publicPackage?: Buffer
+}
+export interface ResponseDkgBackupKeys extends ResponseBase {
+  encryptedKeys?: Buffer
 }
