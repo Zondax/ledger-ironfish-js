@@ -37,9 +37,18 @@ import {
   ResponseIdentity,
   ResponseSign
 } from './types'
-import {encodeRound3Inputs, minimizeRound3Inputs} from "./ironfish";
+import {
+  serializeDkgGetCommitments,
+  serializeDkgGetNonces,
+  serializeDkgRound1,
+  serializeDkgRound2,
+  serializeDkgRound3, serializeDkgSign,
+} from './serialize'
+import { deserializeDkgRound1, deserializeDkgRound2 } from './deserialize'
 
 export * from './types'
+
+const DUMMY_PATH = "m/44'/1338'/0";
 
 export default class IronfishApp extends GenericApp {
   readonly CLA_DKG: number = 0x63;
@@ -181,20 +190,9 @@ export default class IronfishApp extends GenericApp {
         ])
   }
 
-  async dkgRound1(path: string, index:number, identities: string[], minSigners: number): Promise<ResponseDkgRound1> {
-    let blob = Buffer
-        .alloc(1 + 1 + identities.length * 129 + 1);
-    console.log(`dkgRound1 msg size: ${blob.byteLength}`)
-
-
-    blob.writeUint8(index);
-    blob.writeUint8(identities.length, 1);
-    for (let i = 0; i < identities.length; i++) {
-      blob.fill(Buffer.from(identities[i], "hex"), 1 + 1 + (i * 129))
-    }
-    blob.writeUint8(minSigners, 1 + 1 + identities.length * 129);
-
-    const chunks = this.prepareChunks(path, blob)
+  async dkgRound1(index:number, identities: string[], minSigners: number): Promise<ResponseDkgRound1> {
+    const blob = serializeDkgRound1(index, identities, minSigners);
+    const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
     try{
       let response = Buffer.alloc(0)
@@ -251,22 +249,10 @@ export default class IronfishApp extends GenericApp {
           }
 
         } else {
-          // console.log("raw round1 " + data.toString("hex"))
-          let pos = 0
-          const secretPackageLen = data.readUint16BE(pos)
-          pos += 2
-          const secretPackage = data.subarray(pos, pos + secretPackageLen)
-          pos += secretPackageLen
-          const publicPackageLen = data.readUint16BE(pos)
-          pos += 2
-          const publicPackage = data.subarray(pos, pos + publicPackageLen)
-          pos += publicPackageLen
-
           return {
             returnCode,
             errorMessage,
-            secretPackage,
-            publicPackage
+            ...deserializeDkgRound1(data)
           }
         }
       }
@@ -277,35 +263,9 @@ export default class IronfishApp extends GenericApp {
   }
 
 
-  async dkgRound2(path: string, index: number, round1PublicPackages: string[], round1SecretPackage: string): Promise<ResponseDkgRound2> {
-    let round1PublicPackagesLen = round1PublicPackages[0].length / 2
-    let round1SecretPackageLen = round1SecretPackage.length / 2
-
-    let blob = Buffer
-        .alloc(1 + 1 + 2 + round1PublicPackages.length * round1PublicPackagesLen + 2 + round1SecretPackageLen);
-    console.log(`dkgRound2 msg size: ${blob.byteLength}`)
-
-    let pos = 0;
-
-    blob.writeUint8(index, pos);
-    pos += 1;
-    blob.writeUint8(round1PublicPackages.length, pos);
-    pos += 1;
-    blob.writeUint16BE(round1PublicPackagesLen, pos);
-    pos += 2;
-
-    for (let i = 0; i < round1PublicPackages.length; i++) {
-      blob.fill(Buffer.from(round1PublicPackages[i], "hex"), pos)
-      pos += round1PublicPackagesLen;
-    }
-
-    blob.writeUint16BE(round1SecretPackageLen, pos);
-    pos += 2;
-
-    blob.fill(Buffer.from(round1SecretPackage, "hex"), pos)
-    pos += round1SecretPackageLen;
-
-    const chunks = this.prepareChunks(path, blob)
+  async dkgRound2(index: number, round1PublicPackages: string[], round1SecretPackage: string): Promise<ResponseDkgRound2> {
+    const blob = serializeDkgRound2(index, round1PublicPackages, round1SecretPackage)
+    const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
     try{
       let response = Buffer.alloc(0)
@@ -362,21 +322,10 @@ export default class IronfishApp extends GenericApp {
           }
 
         } else {
-          let pos = 0
-          const secretPackageLen = data.readUint16BE(pos)
-          pos += 2
-          const secretPackage = data.subarray(pos, pos + secretPackageLen)
-          pos += secretPackageLen
-          const publicPackageLen = data.readUint16BE(pos)
-          pos += 2
-          const publicPackage = data.subarray(pos, pos + publicPackageLen)
-          pos += publicPackageLen
-
           return {
             returnCode,
             errorMessage,
-            secretPackage,
-            publicPackage
+            ...deserializeDkgRound2(data)
           }
         }
       }
@@ -387,11 +336,9 @@ export default class IronfishApp extends GenericApp {
   }
 
 
-  async dkgRound3(path: string, index: number, round1PublicPackages: string[], round2PublicPackages: string[], round2SecretPackage: string): Promise<ResponseDkgRound3> {
-    const {participants, round2PublicPkgs, round1PublicPkgs, gskBytes } = minimizeRound3Inputs(index, round1PublicPackages, round2PublicPackages)
-    const blob = encodeRound3Inputs(index, participants, round1PublicPkgs, round2PublicPkgs, round2SecretPackage, gskBytes)
-
-    const chunks = this.prepareChunks(path, blob)
+  async dkgRound3(index: number, round1PublicPackages: string[], round2PublicPackages: string[], round2SecretPackage: string): Promise<ResponseDkgRound3> {
+    const blob = serializeDkgRound3(index, round1PublicPackages, round2PublicPackages, round2SecretPackage)
+    const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
     try{
       let response = Buffer.alloc(0)
@@ -461,21 +408,9 @@ export default class IronfishApp extends GenericApp {
   }
 
 
-  async dkgGetCommitments(path: string, identities: string[], tx_hash: string): Promise<ResponseDkgGetCommitments> {
-    let blob = Buffer
-        .alloc(1 + identities.length * 129 + 32);
-    console.log(`dkgGetCommitment msg size: ${blob.byteLength}`)
-
-
-    blob.writeUint8(identities.length, 0);
-
-    for (let i = 0; i < identities.length; i++) {
-      blob.fill(Buffer.from(identities[i], "hex"), 1 + (i * 129));
-    }
-
-    blob.fill(Buffer.from(tx_hash, "hex"), 1 + identities.length * 129);
-
-    const chunks = this.prepareChunks(path, blob)
+  async dkgGetCommitments(identities: string[], tx_hash: string): Promise<ResponseDkgGetCommitments> {
+    const blob = serializeDkgGetCommitments(identities, tx_hash)
+    const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
     try{
       let response = Buffer.alloc(0)
@@ -547,21 +482,9 @@ export default class IronfishApp extends GenericApp {
   }
 
 
-  async dkgGetNonces(path: string, identities: string[], tx_hash: string): Promise<ResponseDkgGetNonces> {
-    let blob = Buffer
-        .alloc(1 + identities.length * 129 + 32);
-    console.log(`dkgGetNonces msg size: ${blob.byteLength}`)
-
-
-    blob.writeUint8(identities.length, 0);
-
-    for (let i = 0; i < identities.length; i++) {
-      blob.fill(Buffer.from(identities[i], "hex"), 1 + (i * 129));
-    }
-
-    blob.fill(Buffer.from(tx_hash, "hex"), 1 + identities.length * 129);
-
-    const chunks = this.prepareChunks(path, blob)
+  async dkgGetNonces(identities: string[], tx_hash: string): Promise<ResponseDkgGetNonces> {
+    const blob = serializeDkgGetNonces(identities, tx_hash)
+    const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
     try{
       let response = Buffer.alloc(0)
@@ -632,32 +555,9 @@ export default class IronfishApp extends GenericApp {
     }
   }
 
-  async dkgSign(path: string, pkRandomness: string, frostSigningPackage: string, nonces: string): Promise<ResponseDkgSign> {
-    let pkRandomnessLen = pkRandomness.length/2
-    let frostSigningPackageLen = frostSigningPackage.length/2
-    let noncesLen = nonces.length/2
-
-    let blob = Buffer
-        .alloc(2 +pkRandomnessLen + 2 + frostSigningPackageLen + 2 + noncesLen);
-    console.log(`dkgSign msg size: ${blob.byteLength}`)
-
-    let pos = 0;
-
-    blob.writeUint16BE(pkRandomnessLen, pos);
-    pos += 2;
-    blob.fill(Buffer.from(pkRandomness, "hex"), pos);
-    pos += pkRandomnessLen;
-
-    blob.writeUint16BE(frostSigningPackageLen, pos);
-    pos += 2;
-    blob.fill(Buffer.from(frostSigningPackage, "hex"), pos);
-    pos += frostSigningPackageLen;
-
-    blob.writeUint16BE(noncesLen, pos);
-    pos += 2;
-    blob.fill(Buffer.from(nonces, "hex"), pos);
-
-    const chunks = this.prepareChunks(path, blob)
+  async dkgSign(pkRandomness: string, frostSigningPackage: string, nonces: string): Promise<ResponseDkgSign> {
+    const blob = serializeDkgSign(pkRandomness, frostSigningPackage, nonces)
+    const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
     try{
       let response = Buffer.alloc(0)
@@ -838,8 +738,8 @@ export default class IronfishApp extends GenericApp {
   }
 
 
-  async dkgRestoreKeys(path: string, encryptedKeys: string): Promise<ResponseBase> {
-    const chunks = this.prepareChunks(path, Buffer.from(encryptedKeys, "hex"))
+  async dkgRestoreKeys(encryptedKeys: string): Promise<ResponseBase> {
+    const chunks = this.prepareChunks(DUMMY_PATH, Buffer.from(encryptedKeys, "hex"))
 
     try{
       let response = Buffer.alloc(0)
