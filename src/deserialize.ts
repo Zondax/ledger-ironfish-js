@@ -11,7 +11,7 @@ export const deserializeDkgRound1 = (data: Buffer) => {
 
   return {
     secretPackage,
-    publicPackage
+    publicPackage,
   }
 }
 
@@ -28,6 +28,6 @@ export const deserializeDkgRound2 = (data: Buffer) => {
 
   return {
     secretPackage,
-    publicPackage
+    publicPackage,
   }
 }

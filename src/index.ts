@@ -16,42 +16,47 @@
  ******************************************************************************* */
 import GenericApp, {
   ConstructorParams,
-  errorCodeToString,
   LedgerError,
   PAYLOAD_TYPE,
-  processErrorResponse, ResponseBase,
+  ResponseBase,
   Transport,
+  errorCodeToString,
+  processErrorResponse,
 } from '@zondax/ledger-js'
 
-import {P2_VALUES, REDJUBJUB_SIGNATURE_LEN} from './consts'
-import {processGetIdentityResponse, processGetKeysResponse} from './helper'
-import {
-  IronfishIns,
-  IronfishKeys,
-  KeyResponse, ResponseDkgBackupKeys,
-  ResponseDkgGetCommitments, ResponseDkgGetNonces, ResponseDkgGetPublicPackage,
-  ResponseDkgRound1,
-  ResponseDkgRound2,
-  ResponseDkgRound3,
-  ResponseDkgSign,
-  ResponseIdentity,
-  ResponseSign
-} from './types'
+import { P2_VALUES, REDJUBJUB_SIGNATURE_LEN } from './consts'
+import { deserializeDkgRound1, deserializeDkgRound2 } from './deserialize'
+import { processGetIdentityResponse, processGetKeysResponse } from './helper'
 import {
   serializeDkgGetCommitments,
   serializeDkgGetNonces,
   serializeDkgRound1,
   serializeDkgRound2,
-  serializeDkgRound3, serializeDkgSign,
+  serializeDkgRound3,
+  serializeDkgSign,
 } from './serialize'
-import { deserializeDkgRound1, deserializeDkgRound2 } from './deserialize'
+import {
+  IronfishIns,
+  IronfishKeys,
+  KeyResponse,
+  ResponseDkgBackupKeys,
+  ResponseDkgGetCommitments,
+  ResponseDkgGetNonces,
+  ResponseDkgGetPublicPackage,
+  ResponseDkgRound1,
+  ResponseDkgRound2,
+  ResponseDkgRound3,
+  ResponseDkgSign,
+  ResponseIdentity,
+  ResponseSign,
+} from './types'
 
 export * from './types'
 
-const DUMMY_PATH = "m/44'/1338'/0";
+const DUMMY_PATH = "m/44'/1338'/0"
 
 export default class IronfishApp extends GenericApp {
-  readonly CLA_DKG: number = 0x63;
+  readonly CLA_DKG: number = 0x63
   readonly INS!: IronfishIns
   constructor(transport: Transport) {
     if (transport == null) throw new Error('Transport has not been defined')
@@ -73,7 +78,7 @@ export default class IronfishApp extends GenericApp {
         DKG_GET_NONCES: 0x17,
         DKG_GET_PUBLIC_PACKAGE: 0x18,
         DKG_BACKUP_KEYS: 0x19,
-        DKG_RESTORE_KEYS: 0x1A
+        DKG_RESTORE_KEYS: 0x1a,
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -123,7 +128,7 @@ export default class IronfishApp extends GenericApp {
           errorMessage = `${errorMessage} : ${response.subarray(0, response.length - 2).toString('ascii')}`
         }
 
-        if (returnCode === LedgerError.NoErrors && response.length == (2 + REDJUBJUB_SIGNATURE_LEN)) {
+        if (returnCode === LedgerError.NoErrors && response.length == 2 + REDJUBJUB_SIGNATURE_LEN) {
           const signature = response.subarray(0, REDJUBJUB_SIGNATURE_LEN)
 
           return {
@@ -141,7 +146,7 @@ export default class IronfishApp extends GenericApp {
   }
 
   signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer): Promise<ResponseSign> {
-    return this.signChunk(this.INS.SIGN, chunkIdx, chunkNum, chunk);
+    return this.signChunk(this.INS.SIGN, chunkIdx, chunkNum, chunk)
   }
 
   async sign(path: string, blob: Buffer): Promise<ResponseSign> {
@@ -164,12 +169,12 @@ export default class IronfishApp extends GenericApp {
   }
 
   async dkgGetIdentity(index: number): Promise<ResponseIdentity> {
-    let data = Buffer.alloc(1);
-    data.writeUint8(index);
+    let data = Buffer.alloc(1)
+    data.writeUint8(index)
 
     return await this.transport
-        .send(this.CLA_DKG, this.INS.DKG_IDENTITY, 0, 0, data, [LedgerError.NoErrors])
-        .then(response => processGetIdentityResponse(response), processErrorResponse)
+      .send(this.CLA_DKG, this.INS.DKG_IDENTITY, 0, 0, data, [LedgerError.NoErrors])
+      .then(response => processGetIdentityResponse(response), processErrorResponse)
   }
 
   async sendDkgChunk(ins: number, chunkIdx: number, chunkNum: number, chunk: Buffer): Promise<Buffer> {
@@ -181,24 +186,23 @@ export default class IronfishApp extends GenericApp {
       payloadType = PAYLOAD_TYPE.LAST
     }
 
-    return await this.transport
-        .send(this.CLA_DKG, ins, payloadType, P2_VALUES.DEFAULT, chunk, [
-          LedgerError.NoErrors,
-          LedgerError.DataIsInvalid,
-          LedgerError.BadKeyHandle,
-          LedgerError.SignVerifyError,
-        ])
+    return await this.transport.send(this.CLA_DKG, ins, payloadType, P2_VALUES.DEFAULT, chunk, [
+      LedgerError.NoErrors,
+      LedgerError.DataIsInvalid,
+      LedgerError.BadKeyHandle,
+      LedgerError.SignVerifyError,
+    ])
   }
 
-  async dkgRound1(index:number, identities: string[], minSigners: number): Promise<ResponseDkgRound1> {
-    const blob = serializeDkgRound1(index, identities, minSigners);
+  async dkgRound1(index: number, identities: string[], minSigners: number): Promise<ResponseDkgRound1> {
+    const blob = serializeDkgRound1(index, identities, minSigners)
     const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
-    try{
+    try {
       let response = Buffer.alloc(0)
-      let returnCode = 0;
-      let errorCodeData = Buffer.alloc(0);
-      let errorMessage = "";
+      let returnCode = 0
+      let errorCodeData = Buffer.alloc(0)
+      let errorMessage = ''
       try {
         response = await this.sendDkgChunk(this.INS.DKG_ROUND_1, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
@@ -206,7 +210,7 @@ export default class IronfishApp extends GenericApp {
         errorCodeData = response.subarray(-2)
         returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         errorMessage = errorCodeToString(returnCode)
-      }catch(e){
+      } catch (e) {
         // console.log(e)
       }
 
@@ -220,16 +224,16 @@ export default class IronfishApp extends GenericApp {
         errorMessage = errorCodeToString(returnCode)
 
         // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
+        if (returnCode !== LedgerError.NoErrors) {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -241,37 +245,34 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
           return {
             returnCode,
             errorMessage,
-            ...deserializeDkgRound1(data)
+            ...deserializeDkgRound1(data),
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
-
 
   async dkgRound2(index: number, round1PublicPackages: string[], round1SecretPackage: string): Promise<ResponseDkgRound2> {
     const blob = serializeDkgRound2(index, round1PublicPackages, round1SecretPackage)
     const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
-    try{
+    try {
       let response = Buffer.alloc(0)
-      let returnCode = 0;
-      let errorCodeData = Buffer.alloc(0);
-      let errorMessage = "";
+      let returnCode = 0
+      let errorCodeData = Buffer.alloc(0)
+      let errorMessage = ''
       try {
         response = await this.sendDkgChunk(this.INS.DKG_ROUND_2, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
@@ -279,7 +280,7 @@ export default class IronfishApp extends GenericApp {
         errorCodeData = response.subarray(-2)
         returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         errorMessage = errorCodeToString(returnCode)
-      }catch(e){
+      } catch (e) {
         // console.log(e)
       }
 
@@ -293,16 +294,16 @@ export default class IronfishApp extends GenericApp {
         errorMessage = errorCodeToString(returnCode)
 
         // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
+        if (returnCode !== LedgerError.NoErrors) {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -314,37 +315,39 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
           return {
             returnCode,
             errorMessage,
-            ...deserializeDkgRound2(data)
+            ...deserializeDkgRound2(data),
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
 
-
-  async dkgRound3(index: number, round1PublicPackages: string[], round2PublicPackages: string[], round2SecretPackage: string): Promise<ResponseDkgRound3> {
+  async dkgRound3(
+    index: number,
+    round1PublicPackages: string[],
+    round2PublicPackages: string[],
+    round2SecretPackage: string
+  ): Promise<ResponseDkgRound3> {
     const blob = serializeDkgRound3(index, round1PublicPackages, round2PublicPackages, round2SecretPackage)
     const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
-    try{
+    try {
       let response = Buffer.alloc(0)
-      let returnCode = 0;
-      let errorCodeData = Buffer.alloc(0);
-      let errorMessage = "";
+      let returnCode = 0
+      let errorCodeData = Buffer.alloc(0)
+      let errorMessage = ''
       try {
         response = await this.sendDkgChunk(this.INS.DKG_ROUND_3, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
@@ -352,7 +355,7 @@ export default class IronfishApp extends GenericApp {
         errorCodeData = response.subarray(-2)
         returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         errorMessage = errorCodeToString(returnCode)
-      }catch(e){
+      } catch (e) {
         // console.log(e)
       }
 
@@ -366,16 +369,16 @@ export default class IronfishApp extends GenericApp {
         errorMessage = errorCodeToString(returnCode)
 
         // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
+        if (returnCode !== LedgerError.NoErrors) {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -387,36 +390,33 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
-
 
   async dkgGetCommitments(identities: string[], tx_hash: string): Promise<ResponseDkgGetCommitments> {
     const blob = serializeDkgGetCommitments(identities, tx_hash)
     const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
-    try{
+    try {
       let response = Buffer.alloc(0)
-      let returnCode = 0;
-      let errorCodeData = Buffer.alloc(0);
-      let errorMessage = "";
+      let returnCode = 0
+      let errorCodeData = Buffer.alloc(0)
+      let errorMessage = ''
       try {
         response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENTS, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
@@ -424,7 +424,7 @@ export default class IronfishApp extends GenericApp {
         errorCodeData = response.subarray(-2)
         returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         errorMessage = errorCodeToString(returnCode)
-      }catch(e){
+      } catch (e) {
         // console.log(e)
       }
 
@@ -438,16 +438,16 @@ export default class IronfishApp extends GenericApp {
         errorMessage = errorCodeToString(returnCode)
 
         // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
+        if (returnCode !== LedgerError.NoErrors) {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -459,38 +459,34 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
-
           return {
             returnCode,
             errorMessage,
-            commitments: data
+            commitments: data,
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
-
 
   async dkgGetNonces(identities: string[], tx_hash: string): Promise<ResponseDkgGetNonces> {
     const blob = serializeDkgGetNonces(identities, tx_hash)
     const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
-    try{
+    try {
       let response = Buffer.alloc(0)
-      let returnCode = 0;
-      let errorCodeData = Buffer.alloc(0);
-      let errorMessage = "";
+      let returnCode = 0
+      let errorCodeData = Buffer.alloc(0)
+      let errorMessage = ''
       try {
         response = await this.sendDkgChunk(this.INS.DKG_GET_NONCES, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
@@ -498,7 +494,7 @@ export default class IronfishApp extends GenericApp {
         errorCodeData = response.subarray(-2)
         returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         errorMessage = errorCodeToString(returnCode)
-      }catch(e){
+      } catch (e) {
         // console.log(e)
       }
 
@@ -512,16 +508,16 @@ export default class IronfishApp extends GenericApp {
         errorMessage = errorCodeToString(returnCode)
 
         // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
+        if (returnCode !== LedgerError.NoErrors) {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -533,24 +529,21 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
-
           return {
             returnCode,
             errorMessage,
-            nonces: data
+            nonces: data,
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
@@ -559,11 +552,11 @@ export default class IronfishApp extends GenericApp {
     const blob = serializeDkgSign(pkRandomness, frostSigningPackage, nonces)
     const chunks = this.prepareChunks(DUMMY_PATH, blob)
 
-    try{
+    try {
       let response = Buffer.alloc(0)
-      let returnCode = 0;
-      let errorCodeData = Buffer.alloc(0);
-      let errorMessage = "";
+      let returnCode = 0
+      let errorCodeData = Buffer.alloc(0)
+      let errorMessage = ''
       try {
         response = await this.sendDkgChunk(this.INS.DKG_SIGN, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
@@ -571,7 +564,7 @@ export default class IronfishApp extends GenericApp {
         errorCodeData = response.subarray(-2)
         returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         errorMessage = errorCodeToString(returnCode)
-      }catch(e){
+      } catch (e) {
         // console.log(e)
       }
 
@@ -585,16 +578,16 @@ export default class IronfishApp extends GenericApp {
         errorMessage = errorCodeToString(returnCode)
 
         // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
+        if (returnCode !== LedgerError.NoErrors) {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -606,48 +599,43 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
-
           return {
             returnCode,
             errorMessage,
-            signature: data
+            signature: data,
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
 
-
-
   async dkgGetPublicPackage(): Promise<ResponseDkgGetPublicPackage> {
-    try{
+    try {
       let response = await this.transport.send(this.CLA_DKG, this.INS.DKG_GET_PUBLIC_PACKAGE, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
-        // console.log("resp 0 " + response.toString("hex"))
+      // console.log("resp 0 " + response.toString("hex"))
       let errorCodeData = response.subarray(-2)
       let returnCode = errorCodeData[0] * 256 + errorCodeData[1]
       let errorMessage = errorCodeToString(returnCode)
 
-        // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
-          return {
-            returnCode,
-            errorMessage
-          }
+      // console.log("returnCode " + returnCode)
+      if (returnCode !== LedgerError.NoErrors) {
+        return {
+          returnCode,
+          errorMessage,
         }
+      }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -659,30 +647,27 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
-
           return {
             returnCode,
             errorMessage,
-            publicPackage: data
+            publicPackage: data,
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
 
   async dkgBackupKeys(): Promise<ResponseDkgBackupKeys> {
-    try{
+    try {
       let response = await this.transport.send(this.CLA_DKG, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
       // console.log("resp 0 " + response.toString("hex"))
       let errorCodeData = response.subarray(-2)
@@ -690,15 +675,15 @@ export default class IronfishApp extends GenericApp {
       let errorMessage = errorCodeToString(returnCode)
 
       // console.log("returnCode " + returnCode)
-      if (returnCode !== LedgerError.NoErrors){
+      if (returnCode !== LedgerError.NoErrors) {
         return {
           returnCode,
-          errorMessage
+          errorMessage,
         }
       }
 
       let data = Buffer.alloc(0)
-      while(true) {
+      while (true) {
         let newData = response.subarray(0, response.length - 2)
         data = Buffer.concat([data, newData])
 
@@ -710,42 +695,38 @@ export default class IronfishApp extends GenericApp {
           returnCode = errorCodeData[0] * 256 + errorCodeData[1]
           errorMessage = errorCodeToString(returnCode)
 
-          if (returnCode !== LedgerError.NoErrors){
+          if (returnCode !== LedgerError.NoErrors) {
             return {
               returnCode,
-              errorMessage
+              errorMessage,
             }
           }
-
         } else {
-
           return {
             returnCode,
             errorMessage,
-            encryptedKeys: data
+            encryptedKeys: data,
           }
         }
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
   async dkgRetrieveKeys(keyType: IronfishKeys): Promise<KeyResponse> {
     return await this.transport
-        .send(this.CLA_DKG, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
-        .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
+      .send(this.CLA_DKG, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
+      .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
   }
 
-
   async dkgRestoreKeys(encryptedKeys: string): Promise<ResponseBase> {
-    const chunks = this.prepareChunks(DUMMY_PATH, Buffer.from(encryptedKeys, "hex"))
+    const chunks = this.prepareChunks(DUMMY_PATH, Buffer.from(encryptedKeys, 'hex'))
 
-    try{
+    try {
       let response = Buffer.alloc(0)
-      let returnCode = 0;
-      let errorCodeData = Buffer.alloc(0);
-      let errorMessage = "";
+      let returnCode = 0
+      let errorCodeData = Buffer.alloc(0)
+      let errorMessage = ''
       try {
         response = await this.sendDkgChunk(this.INS.DKG_RESTORE_KEYS, 1, chunks.length, chunks[0])
         // console.log("resp 0 " + response.toString("hex"))
@@ -753,7 +734,7 @@ export default class IronfishApp extends GenericApp {
         errorCodeData = response.subarray(-2)
         returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         errorMessage = errorCodeToString(returnCode)
-      }catch(e){
+      } catch (e) {
         // console.log(e)
       }
 
@@ -767,20 +748,19 @@ export default class IronfishApp extends GenericApp {
         errorMessage = errorCodeToString(returnCode)
 
         // console.log("returnCode " + returnCode)
-        if (returnCode !== LedgerError.NoErrors){
+        if (returnCode !== LedgerError.NoErrors) {
           return {
             returnCode,
-            errorMessage
+            errorMessage,
           }
         }
       }
 
       return {
         returnCode,
-        errorMessage
+        errorMessage,
       }
-
-    } catch(e){
+    } catch (e) {
       return processErrorResponse(e)
     }
   }
