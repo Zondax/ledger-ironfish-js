@@ -14,7 +14,7 @@ export interface IronfishIns extends INSGeneric {
   DKG_GET_NONCES: 0x17
   DKG_GET_PUBLIC_PACKAGE: 0x18
   DKG_BACKUP_KEYS: 0x19
-  DKG_RESTORE_KEYS: 0x1A
+  DKG_RESTORE_KEYS: 0x1a
 }
 
 export type KeyResponse = ResponseAddress | ResponseViewKey | ResponseProofGenKey

@@ -1,6 +1,6 @@
 import { errorCodeToString } from '@zondax/ledger-js'
 
-import {ED25519_SIGNATURE_LEN, KEY_LENGTH, VERSION, REDJUBJUB_SIGNATURE_LEN, IDENTITY_LEN} from './consts'
+import { ED25519_SIGNATURE_LEN, IDENTITY_LEN, KEY_LENGTH, REDJUBJUB_SIGNATURE_LEN, VERSION } from './consts'
 import { IronfishKeys, KeyResponse, ResponseIdentity } from './types'
 
 export function processGetKeysResponse(response: Buffer, keyType: IronfishKeys): KeyResponse {
@@ -73,7 +73,7 @@ export function processGetIdentityResponse(response: Buffer): ResponseIdentity {
 
   getIdentityResponse = {
     ...getIdentityResponse,
-    identity
+    identity,
   }
 
   return getIdentityResponse
