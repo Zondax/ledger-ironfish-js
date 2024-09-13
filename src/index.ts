@@ -42,6 +42,7 @@ import {encodeRound3Inputs, minimizeRound3Inputs} from "./ironfish";
 export * from './types'
 
 export default class IronfishApp extends GenericApp {
+  readonly CLA_DKG: number = 0x63;
   readonly INS!: IronfishIns
   constructor(transport: Transport) {
     if (transport == null) throw new Error('Transport has not been defined')
@@ -158,7 +159,7 @@ export default class IronfishApp extends GenericApp {
     data.writeUint8(index);
 
     return await this.transport
-        .send(this.CLA, this.INS.DKG_IDENTITY, 0, 0, data, [LedgerError.NoErrors])
+        .send(this.CLA_DKG, this.INS.DKG_IDENTITY, 0, 0, data, [LedgerError.NoErrors])
         .then(response => processGetIdentityResponse(response), processErrorResponse)
   }
 
@@ -172,7 +173,7 @@ export default class IronfishApp extends GenericApp {
     }
 
     return await this.transport
-        .send(this.CLA, ins, payloadType, P2_VALUES.DEFAULT, chunk, [
+        .send(this.CLA_DKG, ins, payloadType, P2_VALUES.DEFAULT, chunk, [
           LedgerError.NoErrors,
           LedgerError.DataIsInvalid,
           LedgerError.BadKeyHandle,
@@ -235,7 +236,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.transport.send(this.CLA, this.INS.DKG_ROUND_1, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA_DKG, this.INS.DKG_ROUND_1, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -346,7 +347,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.transport.send(this.CLA, this.INS.DKG_ROUND_2, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA_DKG, this.INS.DKG_ROUND_2, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -432,7 +433,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.transport.send(this.CLA, this.INS.DKG_ROUND_3, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA_DKG, this.INS.DKG_ROUND_3, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -516,7 +517,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.transport.send(this.CLA, this.INS.DKG_GET_COMMITMENTS, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA_DKG, this.INS.DKG_GET_COMMITMENTS, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -602,7 +603,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.transport.send(this.CLA, this.INS.DKG_GET_NONCES, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA_DKG, this.INS.DKG_GET_NONCES, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -698,7 +699,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.transport.send(this.CLA, this.INS.DKG_SIGN, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA_DKG, this.INS.DKG_SIGN, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -731,7 +732,7 @@ export default class IronfishApp extends GenericApp {
 
   async dkgGetPublicPackage(): Promise<ResponseDkgGetPublicPackage> {
     try{
-      let response = await this.transport.send(this.CLA, this.INS.DKG_GET_PUBLIC_PACKAGE, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
+      let response = await this.transport.send(this.CLA_DKG, this.INS.DKG_GET_PUBLIC_PACKAGE, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
         // console.log("resp 0 " + response.toString("hex"))
       let errorCodeData = response.subarray(-2)
       let returnCode = errorCodeData[0] * 256 + errorCodeData[1]
@@ -782,7 +783,7 @@ export default class IronfishApp extends GenericApp {
 
   async dkgBackupKeys(): Promise<ResponseDkgBackupKeys> {
     try{
-      let response = await this.transport.send(this.CLA, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
+      let response = await this.transport.send(this.CLA_DKG, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
       // console.log("resp 0 " + response.toString("hex"))
       let errorCodeData = response.subarray(-2)
       let returnCode = errorCodeData[0] * 256 + errorCodeData[1]
@@ -802,7 +803,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.transport.send(this.CLA, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA_DKG, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -832,7 +833,7 @@ export default class IronfishApp extends GenericApp {
   }
   async dkgRetrieveKeys(keyType: IronfishKeys): Promise<KeyResponse> {
     return await this.transport
-        .send(this.CLA, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
+        .send(this.CLA_DKG, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
         .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
   }
 
