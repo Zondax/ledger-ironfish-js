@@ -19,7 +19,7 @@ import GenericApp, {
   errorCodeToString,
   LedgerError,
   PAYLOAD_TYPE,
-  processErrorResponse,
+  processErrorResponse, ResponseBase,
   Transport,
 } from '@zondax/ledger-js'
 
@@ -62,7 +62,8 @@ export default class IronfishApp extends GenericApp {
         DKG_GET_KEYS: 0x16,
         DKG_GET_NONCES: 0x17,
         DKG_GET_PUBLIC_PACKAGE: 0x18,
-        DKG_BACKUP_KEYS: 0x19
+        DKG_BACKUP_KEYS: 0x19,
+        DKG_RESTORE_KEYS: 0x1A
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -234,7 +235,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_ROUND_1, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA, this.INS.DKG_ROUND_1, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -345,7 +346,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_ROUND_2, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA, this.INS.DKG_ROUND_2, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -431,7 +432,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_ROUND_3, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA, this.INS.DKG_ROUND_3, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -515,7 +516,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_GET_COMMITMENTS, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA, this.INS.DKG_GET_COMMITMENTS, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -601,7 +602,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_GET_NONCES, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA, this.INS.DKG_GET_NONCES, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -697,7 +698,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_SIGN, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA, this.INS.DKG_SIGN, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -779,8 +780,6 @@ export default class IronfishApp extends GenericApp {
     }
   }
 
-
-
   async dkgBackupKeys(): Promise<ResponseDkgBackupKeys> {
     try{
       let response = await this.transport.send(this.CLA, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
@@ -803,7 +802,7 @@ export default class IronfishApp extends GenericApp {
         data = Buffer.concat([data, newData])
 
         if (response.length == 255) {
-          response = await this.sendDkgChunk(this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0))
+          response = await this.transport.send(this.CLA, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0))
           // console.log("resp " + response.toString("hex"))
 
           errorCodeData = response.subarray(-2)
@@ -835,5 +834,53 @@ export default class IronfishApp extends GenericApp {
     return await this.transport
         .send(this.CLA, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
         .then(response => processGetKeysResponse(response, keyType), processErrorResponse)
+  }
+
+
+  async dkgRestoreKeys(path: string, encryptedKeys: string): Promise<ResponseBase> {
+    const chunks = this.prepareChunks(path, Buffer.from(encryptedKeys, "hex"))
+
+    try{
+      let response = Buffer.alloc(0)
+      let returnCode = 0;
+      let errorCodeData = Buffer.alloc(0);
+      let errorMessage = "";
+      try {
+        response = await this.sendDkgChunk(this.INS.DKG_RESTORE_KEYS, 1, chunks.length, chunks[0])
+        // console.log("resp 0 " + response.toString("hex"))
+
+        errorCodeData = response.subarray(-2)
+        returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+        errorMessage = errorCodeToString(returnCode)
+      }catch(e){
+        // console.log(e)
+      }
+
+      for (let i = 1; i < chunks.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        response = await this.sendDkgChunk(this.INS.DKG_RESTORE_KEYS, 1 + i, chunks.length, chunks[i])
+        // console.log("resp " + i + " " + response.toString("hex"))
+
+        errorCodeData = response.subarray(-2)
+        returnCode = errorCodeData[0] * 256 + errorCodeData[1]
+        errorMessage = errorCodeToString(returnCode)
+
+        // console.log("returnCode " + returnCode)
+        if (returnCode !== LedgerError.NoErrors){
+          return {
+            returnCode,
+            errorMessage
+          }
+        }
+      }
+
+      return {
+        returnCode,
+        errorMessage
+      }
+
+    } catch(e){
+      return processErrorResponse(e)
+    }
   }
 }
