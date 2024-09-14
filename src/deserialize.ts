@@ -1,4 +1,6 @@
-export const deserializeDkgRound1 = (data: Buffer) => {
+export const deserializeDkgRound1 = (data?: Buffer) => {
+  if (!data) return {}
+
   let pos = 0
   const secretPackageLen = data.readUint16BE(pos)
   pos += 2
@@ -15,7 +17,9 @@ export const deserializeDkgRound1 = (data: Buffer) => {
   }
 }
 
-export const deserializeDkgRound2 = (data: Buffer) => {
+export const deserializeDkgRound2 = (data?: Buffer) => {
+  if (!data) return {}
+
   let pos = 0
   const secretPackageLen = data.readUint16BE(pos)
   pos += 2
