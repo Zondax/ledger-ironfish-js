@@ -18,7 +18,7 @@ import GenericApp, { ConstructorParams, LedgerError, Transport, processErrorResp
 import { ResponsePayload } from '@zondax/ledger-js/dist/payload'
 
 import { P2_VALUES } from './consts'
-import { deserializeDkgRound1, deserializeDkgRound2 } from './deserialize'
+import { deserializeDkgRound1, deserializeDkgRound2, deserializeReviewTx } from './deserialize'
 import { processGetIdentityResponse, processGetKeysResponse } from './helper'
 import { serializeDkgGetCommitments, serializeDkgRound1, serializeDkgRound2, serializeDkgRound3Min, serializeDkgSign } from './serialize'
 import {
@@ -32,6 +32,7 @@ import {
   ResponseDkgRound2,
   ResponseDkgSign,
   ResponseIdentity,
+  ResponseReviewTransaction,
   ResponseSign,
 } from './types'
 
@@ -63,6 +64,7 @@ export default class IronfishApp extends GenericApp {
         DKG_BACKUP_KEYS: 0x19,
         DKG_RESTORE_KEYS: 0x1a,
         GET_RESULT: 0x1b,
+        REVIEW_TX: 0x1c,
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -243,6 +245,23 @@ export default class IronfishApp extends GenericApp {
       for (let i = 0; i < chunks.length; i += 1) {
         await this.sendGenericChunk(this.INS.DKG_RESTORE_KEYS, P2_VALUES.DEFAULT, 1 + i, chunks.length, chunks[i])
       }
+    } catch (e) {
+      throw processErrorResponse(e)
+    }
+  }
+
+  async reviewTransaction(tx: string): Promise<ResponseReviewTransaction> {
+    try {
+      const blob = Buffer.from(tx, 'hex')
+      const chunks = this.prepareChunks(DUMMY_PATH, blob)
+
+      let rawResponse: any
+      for (let i = 0; i < chunks.length; i += 1) {
+        rawResponse = await this.sendGenericChunk(this.INS.REVIEW_TX, P2_VALUES.DEFAULT, 1 + i, chunks.length, chunks[i])
+      }
+
+      let result = await this.getResult(rawResponse)
+      return deserializeReviewTx(result)
     } catch (e) {
       throw processErrorResponse(e)
     }
