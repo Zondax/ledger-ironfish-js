@@ -72,5 +72,5 @@ export interface ResponseDkgBackupKeys {
   encryptedKeys: Buffer
 }
 export interface ResponseReviewTransaction {
-  hash?: Buffer
+  hash: Buffer
 }
