@@ -73,6 +73,8 @@ export const serializeDkgRound3Min = (
       2 +
       gskBytes.length * gskLen
   )
+  console.log(`dkgRound3 msg size: ${blob.byteLength}`)
+
   let pos = 0
 
   // identity index
