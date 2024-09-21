@@ -28,7 +28,7 @@
     "url": "https://github.com/zondax/ledger-ironfish-js/issues"
   },
   "dependencies": {
-    "@zondax/ledger-js": "^0.2.1"
+    "@zondax/ledger-js": "^1.0.1"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",

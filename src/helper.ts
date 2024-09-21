@@ -1,61 +1,43 @@
-import { errorCodeToString } from '@zondax/ledger-js'
+import { ResponsePayload } from '@zondax/ledger-js/dist/payload'
 
-import { KEY_LENGTH } from './consts'
-import { IronfishKeys, KeyResponse } from './types'
+import { ED25519_SIGNATURE_LEN, IDENTITY_LEN, KEY_LENGTH, REDJUBJUB_SIGNATURE_LEN, VERSION } from './consts'
+import { IronfishKeys, KeyResponse, ResponseIdentity } from './types'
 
-export function processGetKeysResponse(response: Buffer, keyType: IronfishKeys): KeyResponse {
-  const errorCodeData = response.subarray(-2)
-  const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
-
-  let requestedKey: KeyResponse = {
-    returnCode: returnCode,
-    errorMessage: errorCodeToString(returnCode),
-  }
-
+export function processGetKeysResponse(response: ResponsePayload, keyType: IronfishKeys): KeyResponse {
   switch (keyType) {
     case IronfishKeys.PublicAddress: {
-      const publicAddress = Buffer.from(response.subarray(0, KEY_LENGTH))
-      requestedKey = {
-        ...requestedKey,
+      const publicAddress = response.readBytes(KEY_LENGTH)
+      return {
         publicAddress,
       }
-      break
     }
 
     case IronfishKeys.ViewKey: {
-      const viewKey = Buffer.from(response.subarray(0, 2 * KEY_LENGTH))
-      response = response.subarray(2 * KEY_LENGTH)
+      const viewKey = response.readBytes(2 * KEY_LENGTH)
+      const ivk = response.readBytes(KEY_LENGTH)
+      const ovk = response.readBytes(KEY_LENGTH)
 
-      const ivk = Buffer.from(response.subarray(0, KEY_LENGTH))
-      response = response.subarray(KEY_LENGTH)
-
-      const ovk = Buffer.from(response.subarray(0, KEY_LENGTH))
-      response = response.subarray(KEY_LENGTH)
-
-      requestedKey = {
-        ...requestedKey,
+      return {
         viewKey,
         ivk,
         ovk,
       }
-      break
     }
 
     case IronfishKeys.ProofGenerationKey: {
-      const ak = Buffer.from(response.subarray(0, KEY_LENGTH))
-      response = response.subarray(KEY_LENGTH)
+      const ak = response.readBytes(KEY_LENGTH)
+      const nsk = response.readBytes(KEY_LENGTH)
 
-      const nsk = Buffer.from(response.subarray(0, KEY_LENGTH))
-      response = response.subarray(KEY_LENGTH)
-
-      requestedKey = {
-        ...requestedKey,
+      return {
         ak,
         nsk,
       }
-      break
     }
   }
+}
 
-  return requestedKey
+export function processGetIdentityResponse(response: ResponsePayload): ResponseIdentity {
+  const identity = response.readBytes(IDENTITY_LEN)
+
+  return { identity }
 }
