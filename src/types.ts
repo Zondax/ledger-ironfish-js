@@ -15,6 +15,7 @@ export interface IronfishIns extends INSGeneric {
   DKG_BACKUP_KEYS: 0x19
   DKG_RESTORE_KEYS: 0x1a
   GET_RESULT: 0x1b
+  REVIEW_TX: 0x1c
 }
 
 export type KeyResponse = ResponseAddress | ResponseViewKey | ResponseProofGenKey
@@ -69,4 +70,7 @@ export interface ResponseDkgGetPublicPackage {
 }
 export interface ResponseDkgBackupKeys {
   encryptedKeys: Buffer
+}
+export interface ResponseReviewTransaction {
+  hash: Buffer
 }
