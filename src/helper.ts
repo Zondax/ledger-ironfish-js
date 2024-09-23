@@ -33,6 +33,14 @@ export function processGetKeysResponse(response: ResponsePayload, keyType: Ironf
         nsk,
       }
     }
+
+    case IronfishKeys.DkgIdentity: {
+      const identity = response.readBytes(IDENTITY_LEN)
+
+      return {
+        identity,
+      }
+    }
   }
 }
 
