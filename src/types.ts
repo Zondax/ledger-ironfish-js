@@ -18,7 +18,7 @@ export interface IronfishIns extends INSGeneric {
   REVIEW_TX: 0x1c
 }
 
-export type KeyResponse = ResponseAddress | ResponseViewKey | ResponseProofGenKey
+export type KeyResponse = ResponseAddress | ResponseViewKey | ResponseProofGenKey | ResponseIdentity
 
 export interface ResponseAddress {
   publicAddress: Buffer
@@ -43,6 +43,7 @@ export enum IronfishKeys {
   PublicAddress = 0x00,
   ViewKey = 0x01,
   ProofGenerationKey = 0x02,
+  DkgIdentity = 0x03,
 }
 
 export interface ResponseIdentity {
