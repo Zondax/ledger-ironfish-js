@@ -102,11 +102,12 @@ export default class IronfishApp extends GenericApp {
     }
   }
 
-  async dkgGetIdentity(index: number): Promise<ResponseIdentity> {
+  async dkgGetIdentity(index: number, showInDevice: boolean): Promise<ResponseIdentity> {
     let req = Buffer.alloc(1)
     req.writeUint8(index)
 
-    const response = await this.transport.send(this.CLA, this.INS.DKG_IDENTITY, 0, 0, req, [LedgerError.NoErrors])
+    const p1 = showInDevice ? 1 : 0
+    const response = await this.transport.send(this.CLA, this.INS.DKG_IDENTITY, p1, 0, req, [LedgerError.NoErrors])
     const data = processResponse(response)
     return processGetIdentityResponse(data)
   }
