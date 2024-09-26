@@ -18,7 +18,7 @@ import GenericApp, { ConstructorParams, LedgerError, Transport, processErrorResp
 import { ResponsePayload } from '@zondax/ledger-js/dist/payload'
 
 import { P2_VALUES } from './consts'
-import { deserializeDkgRound1, deserializeDkgRound2, deserializeReviewTx } from './deserialize'
+import { deserializeDkgRound1, deserializeDkgRound2, deserializeGetIdentities, deserializeReviewTx } from './deserialize'
 import { processGetIdentityResponse, processGetKeysResponse } from './helper'
 import { serializeDkgGetCommitments, serializeDkgRound1, serializeDkgRound2, serializeDkgRound3Min, serializeDkgSign } from './serialize'
 import {
@@ -31,6 +31,7 @@ import {
   ResponseDkgRound1,
   ResponseDkgRound2,
   ResponseDkgSign,
+  ResponseIdentities,
   ResponseIdentity,
   ResponseReviewTransaction,
   ResponseSign,
@@ -59,7 +60,7 @@ export default class IronfishApp extends GenericApp {
         DKG_GET_COMMITMENTS: 0x14,
         DKG_SIGN: 0x15,
         DKG_GET_KEYS: 0x16,
-        DKG_GET_NONCES: 0x17,
+        DKG_IDENTITIES: 0x17,
         DKG_GET_PUBLIC_PACKAGE: 0x18,
         DKG_BACKUP_KEYS: 0x19,
         DKG_RESTORE_KEYS: 0x1a,
@@ -233,6 +234,19 @@ export default class IronfishApp extends GenericApp {
       throw processErrorResponse(e)
     }
   }
+
+  async dkgGetIdentities(): Promise<ResponseIdentities> {
+    try {
+      let response = await this.transport.send(this.CLA, this.INS.DKG_IDENTITIES, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
+      let data = processResponse(response)
+
+      let result = await this.getResult(data)
+      return deserializeGetIdentities(result)
+    } catch (e) {
+      throw processErrorResponse(e)
+    }
+  }
+
   async dkgRetrieveKeys(keyType: IronfishKeys, showInDevice?: boolean): Promise<KeyResponse> {
     const p1 = showInDevice ? 1 : 0
     const response = await this.transport.send(this.CLA, this.INS.DKG_GET_KEYS, p1, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
