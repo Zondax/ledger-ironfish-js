@@ -233,8 +233,9 @@ export default class IronfishApp extends GenericApp {
       throw processErrorResponse(e)
     }
   }
-  async dkgRetrieveKeys(keyType: IronfishKeys): Promise<KeyResponse> {
-    const response = await this.transport.send(this.CLA, this.INS.DKG_GET_KEYS, 0, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
+  async dkgRetrieveKeys(keyType: IronfishKeys, showInDevice?: boolean): Promise<KeyResponse> {
+    const p1 = showInDevice ? 1 : 0
+    const response = await this.transport.send(this.CLA, this.INS.DKG_GET_KEYS, p1, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
     const data = processResponse(response)
     return processGetKeysResponse(data, keyType)
   }
