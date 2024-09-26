@@ -1,4 +1,4 @@
-import { TX_HASH_LEN } from './consts'
+import { IDENTITY_LEN, TX_HASH_LEN } from './consts'
 
 export const deserializeDkgRound1 = (data?: Buffer) => {
   if (!data) throw new Error('unexpected empty data')
@@ -35,6 +35,20 @@ export const deserializeDkgRound2 = (data?: Buffer) => {
   return {
     secretPackage,
     publicPackage,
+  }
+}
+
+export const deserializeGetIdentities = (data?: Buffer) => {
+  if (!data) throw new Error('unexpected empty data')
+
+  const identities: Buffer[] = []
+  const elements = data.length / IDENTITY_LEN
+  for (let i = 0; i < elements; i++) {
+    identities.push(data.subarray(i * IDENTITY_LEN, IDENTITY_LEN + i * IDENTITY_LEN))
+  }
+
+  return {
+    identities,
   }
 }
 
