@@ -89,12 +89,11 @@ export default class IronfishApp extends GenericApp {
   async sign(path: string, blob: Buffer): Promise<ResponseSign> {
     try {
       const chunks = this.prepareChunks(path, blob)
+      let result = await this.signSendChunk(this.INS.SIGN, 1, chunks.length, chunks[0])
 
-      let result: any
-      for (let i = 0; i < chunks.length; i += 1) {
-        result = await this.sendGenericChunk(this.INS.SIGN, P2_VALUES.DEFAULT, 1, chunks.length, chunks[0])
+      for (let i = 1; i < chunks.length; i += 1) {
+        result = await this.signSendChunk(this.INS.SIGN, 1 + i, chunks.length, chunks[i])
       }
-
       return {
         signature: result.readBytes(result.length()),
       }
