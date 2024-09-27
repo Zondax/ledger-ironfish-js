@@ -11,6 +11,7 @@ export interface IronfishIns extends INSGeneric {
   DKG_GET_COMMITMENTS: 0x14
   DKG_SIGN: 0x15
   DKG_GET_KEYS: 0x16
+  DKG_IDENTITIES: 0x17
   DKG_GET_PUBLIC_PACKAGE: 0x18
   DKG_BACKUP_KEYS: 0x19
   DKG_RESTORE_KEYS: 0x1a
@@ -74,4 +75,8 @@ export interface ResponseDkgBackupKeys {
 }
 export interface ResponseReviewTransaction {
   hash: Buffer
+}
+
+export interface ResponseIdentities {
+  identities: Buffer[]
 }
