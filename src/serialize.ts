@@ -1,6 +1,5 @@
 export const serializeDkgRound1 = (index: number, identities: string[], minSigners: number): Buffer => {
   let blob = Buffer.alloc(1 + 1 + identities.length * 129 + 1)
-  console.log(`dkgRound1 msg size: ${blob.byteLength}`)
 
   blob.writeUint8(index)
   blob.writeUint8(identities.length, 1)
@@ -17,7 +16,6 @@ export const serializeDkgRound2 = (index: number, round1PublicPackages: string[]
   let round1SecretPackageLen = round1SecretPackage.length / 2
 
   let blob = Buffer.alloc(1 + 1 + 2 + round1PublicPackages.length * round1PublicPackagesLen + 2 + round1SecretPackageLen)
-  console.log(`dkgRound2 msg size: ${blob.byteLength}`)
 
   let pos = 0
 
@@ -73,7 +71,6 @@ export const serializeDkgRound3Min = (
       2 +
       gskBytes.length * gskLen
   )
-  console.log(`dkgRound3 msg size: ${blob.byteLength}`)
 
   let pos = 0
 
@@ -146,7 +143,6 @@ export const serializeDkgRound3Min = (
 
 export const serializeDkgGetCommitments = (tx_hash: string): Buffer => {
   let blob = Buffer.alloc(32)
-  console.log(`dkgGetCommitment msg size: ${blob.byteLength}`)
 
   blob.fill(Buffer.from(tx_hash, 'hex'), 0)
 
@@ -159,7 +155,6 @@ export const serializeDkgSign = (pkRandomness: string, frostSigningPackage: stri
   let txHashLen = 32
 
   let blob = Buffer.alloc(2 + pkRandomnessLen + 2 + frostSigningPackageLen + txHashLen)
-  console.log(`dkgSign msg size: ${blob.byteLength}`)
 
   let pos = 0
 
