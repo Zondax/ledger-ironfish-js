@@ -38,6 +38,7 @@ import {
 } from './types'
 
 export * from './types'
+export * from '@zondax/ledger-js/dist/responseError'
 
 const DUMMY_PATH = "m/44'/1338'/0"
 const DKG_APP_CLA = 0x63
