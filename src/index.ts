@@ -52,10 +52,12 @@ export default class IronfishApp extends GenericApp {
     const params: ConstructorParams = {
       cla: dkgMode ? DKG_APP_CLA : REGULAR_APP_CLA,
       ins: {
+        // Common instructions
         GET_VERSION: 0x00,
+        // Regulars app instructions
         GET_KEYS: 0x01,
         SIGN: 0x02,
-        //DKG Instructions
+        // DKG app instructions
         DKG_IDENTITY: 0x10,
         DKG_ROUND_1: 0x11,
         DKG_ROUND_2: 0x12,
