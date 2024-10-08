@@ -40,6 +40,8 @@ import {
 export * from './types'
 
 const DUMMY_PATH = "m/44'/1338'/0"
+const DKG_APP_CLA = 0x63
+const REGULAR_APP_CLA = 0x59
 
 export default class IronfishApp extends GenericApp {
   readonly INS!: IronfishIns
@@ -47,7 +49,7 @@ export default class IronfishApp extends GenericApp {
     if (transport == null) throw new Error('Transport has not been defined')
 
     const params: ConstructorParams = {
-      cla: dkgMode ? 0x63 : 0x59,
+      cla: dkgMode ? DKG_APP_CLA : REGULAR_APP_CLA,
       ins: {
         GET_VERSION: 0x00,
         GET_KEYS: 0x01,
