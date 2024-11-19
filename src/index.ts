@@ -17,7 +17,7 @@
 import GenericApp, { ConstructorParams, LedgerError, Transport, processErrorResponse, processResponse } from '@zondax/ledger-js'
 import { ResponsePayload } from '@zondax/ledger-js/dist/payload'
 
-import { P2_VALUES } from './consts'
+import { ERROR_DESCRIPTION_OVERRIDE, P2_VALUES } from './consts'
 import { deserializeDkgRound1, deserializeDkgRound2, deserializeGetIdentities, deserializeReviewTx } from './deserialize'
 import { processGetIdentityResponse, processGetKeysResponse } from './helper'
 import { serializeDkgGetCommitments, serializeDkgRound1, serializeDkgRound2, serializeDkgRound3Min, serializeDkgSign } from './serialize'
@@ -78,6 +78,7 @@ export default class IronfishApp extends GenericApp {
       },
       acceptedPathLengths: [3],
       chunkSize: 250,
+      customAppErrorDescription: ERROR_DESCRIPTION_OVERRIDE,
     }
     super(transport, params)
   }
@@ -87,7 +88,7 @@ export default class IronfishApp extends GenericApp {
     const p1 = showInDevice ? this.P1_VALUES.SHOW_ADDRESS_IN_DEVICE : this.P1_VALUES.ONLY_RETRIEVE
 
     const response = await this.transport.send(this.CLA, this.INS.GET_KEYS, p1, keyType, serializedPath, [LedgerError.NoErrors])
-    const payload = processResponse(response)
+    const payload = processResponse(response, this.CUSTOM_APP_ERROR_DESCRIPTION)
     return processGetKeysResponse(payload, keyType)
   }
 
@@ -103,7 +104,7 @@ export default class IronfishApp extends GenericApp {
         signature: result.readBytes(result.length()),
       }
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
@@ -113,7 +114,7 @@ export default class IronfishApp extends GenericApp {
 
     const p1 = showInDevice ? 1 : 0
     const response = await this.transport.send(this.CLA, this.INS.DKG_IDENTITY, p1, 0, req, [LedgerError.NoErrors])
-    const data = processResponse(response)
+    const data = processResponse(response, this.CUSTOM_APP_ERROR_DESCRIPTION)
     return processGetIdentityResponse(data)
   }
 
@@ -130,7 +131,7 @@ export default class IronfishApp extends GenericApp {
       let result = await this.getResult(rawResponse)
       return deserializeDkgRound1(result)
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
@@ -147,7 +148,7 @@ export default class IronfishApp extends GenericApp {
       let result = await this.getResult(rawResponse)
       return deserializeDkgRound2(result)
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
@@ -167,7 +168,7 @@ export default class IronfishApp extends GenericApp {
         await this.sendGenericChunk(this.INS.DKG_ROUND_3_MIN, P2_VALUES.DEFAULT, 1 + i, chunks.length, chunks[i])
       }
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
@@ -186,7 +187,7 @@ export default class IronfishApp extends GenericApp {
         commitments: result,
       }
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
@@ -205,14 +206,14 @@ export default class IronfishApp extends GenericApp {
         signature: result,
       }
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
   async dkgGetPublicPackage(): Promise<ResponseDkgGetPublicPackage> {
     try {
       let response = await this.transport.send(this.CLA, this.INS.DKG_GET_PUBLIC_PACKAGE, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
-      let data = processResponse(response)
+      let data = processResponse(response, this.CUSTOM_APP_ERROR_DESCRIPTION)
 
       let result = await this.getResult(data)
 
@@ -220,14 +221,14 @@ export default class IronfishApp extends GenericApp {
         publicPackage: result,
       }
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
   async dkgBackupKeys(): Promise<ResponseDkgBackupKeys> {
     try {
       let response = await this.transport.send(this.CLA, this.INS.DKG_BACKUP_KEYS, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
-      let data = processResponse(response)
+      let data = processResponse(response, this.CUSTOM_APP_ERROR_DESCRIPTION)
 
       let result = await this.getResult(data)
 
@@ -235,26 +236,26 @@ export default class IronfishApp extends GenericApp {
         encryptedKeys: result,
       }
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
   async dkgGetIdentities(): Promise<ResponseIdentities> {
     try {
       let response = await this.transport.send(this.CLA, this.INS.DKG_IDENTITIES, 0, 0, Buffer.alloc(0), [LedgerError.NoErrors])
-      let data = processResponse(response)
+      let data = processResponse(response, this.CUSTOM_APP_ERROR_DESCRIPTION)
 
       let result = await this.getResult(data)
       return deserializeGetIdentities(result)
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
   async dkgRetrieveKeys(keyType: IronfishKeys, showInDevice?: boolean): Promise<KeyResponse> {
     const p1 = showInDevice ? 1 : 0
     const response = await this.transport.send(this.CLA, this.INS.DKG_GET_KEYS, p1, keyType, Buffer.alloc(0), [LedgerError.NoErrors])
-    const data = processResponse(response)
+    const data = processResponse(response, this.CUSTOM_APP_ERROR_DESCRIPTION)
     return processGetKeysResponse(data, keyType)
   }
 
@@ -266,7 +267,7 @@ export default class IronfishApp extends GenericApp {
         await this.sendGenericChunk(this.INS.DKG_RESTORE_KEYS, P2_VALUES.DEFAULT, 1 + i, chunks.length, chunks[i])
       }
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
@@ -283,7 +284,7 @@ export default class IronfishApp extends GenericApp {
       let result = await this.getResult(rawResponse)
       return deserializeReviewTx(result)
     } catch (e) {
-      throw processErrorResponse(e)
+      throw processErrorResponse(e, this.CUSTOM_APP_ERROR_DESCRIPTION)
     }
   }
 
@@ -293,7 +294,7 @@ export default class IronfishApp extends GenericApp {
     let chunks = rawResponse.readBytes(1).readUint8()
     for (let i = 0; i < chunks; i++) {
       let result = await this.transport.send(this.CLA, this.INS.GET_RESULT, i, 0, Buffer.alloc(0))
-      let response = processResponse(result)
+      let response = processResponse(result, this.CUSTOM_APP_ERROR_DESCRIPTION)
       data = Buffer.concat([data, response.getCompleteBuffer()])
     }
 
